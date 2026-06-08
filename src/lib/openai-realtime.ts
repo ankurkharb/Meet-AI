@@ -2,10 +2,11 @@
  * OpenAI Realtime API Service
  * Handles real-time voice conversation with AI agent
  * 
- * Uses ephemeral token approach for client-side WebSocket connection
+ * Uses ephemeral token approach for client-side WebRTC connection
  */
 
-const REALTIME_MODEL = "gpt-4o-realtime-preview-2024-12-17";
+const REALTIME_MODEL = "gpt-realtime";
+const REALTIME_TRANSCRIPTION_MODEL = "gpt-4o-transcribe";
 
 export interface RealtimeSession {
     ephemeralToken: string;
@@ -15,7 +16,7 @@ export interface RealtimeSession {
 
 /**
  * Create an ephemeral token for Realtime API access
- * This token is sent to the client to establish a WebSocket connection
+ * This token is sent to the client to establish a WebRTC connection
  */
 export async function createRealtimeSession(agentName: string, agentDescription?: string): Promise<RealtimeSession> {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -26,15 +27,25 @@ export async function createRealtimeSession(agentName: string, agentDescription?
     }
 
     try {
-        const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+        const response = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                model: REALTIME_MODEL,
-                voice: "alloy",
+                session: {
+                    type: "realtime",
+                    model: REALTIME_MODEL,
+                    instructions,
+                    audio: {
+                        output: { voice: "alloy" },
+                        input: {
+                            transcription: { model: REALTIME_TRANSCRIPTION_MODEL },
+                            turn_detection: { type: "server_vad" },
+                        },
+                    },
+                },
             }),
         });
 
@@ -50,11 +61,12 @@ export async function createRealtimeSession(agentName: string, agentDescription?
         }
 
         const data = await response.json() as {
+            value?: string;
             client_secret?: string | { value?: string };
         };
-        const clientSecret = typeof data.client_secret === "object"
+        const clientSecret = data.value || (typeof data.client_secret === "object"
             ? data.client_secret.value
-            : data.client_secret;
+            : data.client_secret);
 
         return {
             ephemeralToken: clientSecret || "",

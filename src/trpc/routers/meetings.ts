@@ -282,15 +282,25 @@ Your responsibilities:
                     });
                 }
 
-                const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+                const response = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${apiKey}`,
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        model: "gpt-4o-realtime-preview-2024-12-17",
-                        voice: "alloy",
+                        session: {
+                            type: "realtime",
+                            model: "gpt-realtime",
+                            instructions,
+                            audio: {
+                                output: { voice: "alloy" },
+                                input: {
+                                    transcription: { model: "gpt-4o-transcribe" },
+                                    turn_detection: { type: "server_vad" },
+                                },
+                            },
+                        },
                     }),
                 });
 
@@ -299,16 +309,17 @@ Your responsibilities:
                     console.error("[Realtime] Session creation failed:", response.status, errorText);
                     throw new TRPCError({
                         code: "INTERNAL_SERVER_ERROR",
-                        message: "OpenAI Realtime API not available. Check your API key has access to gpt-4o-realtime-preview.",
+                        message: `OpenAI Realtime session failed (${response.status}). Check your API key and model access.`,
                     });
                 }
 
                 const data = await response.json() as {
+                    value?: string;
                     client_secret?: string | { value?: string };
                 };
-                const clientSecret = typeof data.client_secret === "object"
+                const clientSecret = data.value || (typeof data.client_secret === "object"
                     ? data.client_secret.value
-                    : data.client_secret;
+                    : data.client_secret);
 
                 return {
                     ephemeralToken: clientSecret || "",

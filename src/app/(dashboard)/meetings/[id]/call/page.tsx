@@ -114,16 +114,7 @@ export default function MeetingCallPage({ params }: MeetingCallPageProps) {
                 const dc = pc.createDataChannel("oai-events");
 
                 dc.onopen = () => {
-                    console.log("[Call] Data channel open — sending session config");
-                    dc.send(JSON.stringify({
-                        type: "session.update",
-                        session: {
-                            instructions: realtimeSession.instructions,
-                            voice: "alloy",
-                            input_audio_transcription: { model: "whisper-1" },
-                            turn_detection: { type: "server_vad" },
-                        },
-                    }));
+                    console.log("[Call] Data channel open");
                 };
 
                 dc.onmessage = (e) => {
@@ -144,7 +135,7 @@ export default function MeetingCallPage({ params }: MeetingCallPageProps) {
                 await pc.setLocalDescription(offer);
 
                 const response = await fetch(
-                    "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
+                    "https://api.openai.com/v1/realtime/calls",
                     {
                         method: "POST",
                         headers: {
