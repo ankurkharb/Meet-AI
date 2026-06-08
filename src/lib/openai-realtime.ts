@@ -5,13 +5,26 @@
  * Uses ephemeral token approach for client-side WebRTC connection
  */
 
-const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-2";
+const DEFAULT_REALTIME_MODEL = "gpt-realtime-2";
 const REALTIME_TRANSCRIPTION_MODEL = "gpt-4o-transcribe";
 
 export interface RealtimeSession {
     ephemeralToken: string;
     agentName: string;
     instructions: string;
+}
+
+export function getRealtimeModel() {
+    const configuredModel = process.env.OPENAI_REALTIME_MODEL
+        ?.trim()
+        .replace(/^["']/, "")
+        .replace(/["']$/, "");
+
+    if (!configuredModel || configuredModel === "gpt-realtime") {
+        return DEFAULT_REALTIME_MODEL;
+    }
+
+    return configuredModel;
 }
 
 /**
@@ -36,7 +49,7 @@ export async function createRealtimeSession(agentName: string, agentDescription?
             body: JSON.stringify({
                 session: {
                     type: "realtime",
-                    model: REALTIME_MODEL,
+                    model: getRealtimeModel(),
                     instructions,
                     audio: {
                         output: { voice: "alloy" },

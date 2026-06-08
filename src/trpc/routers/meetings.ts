@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../init";
 import { meetingsService, createMeetingSchema, updateMeetingSchema, meetingsFilterSchema } from "@/modules/meetings";
 import { TRPCError } from "@trpc/server";
 import { chatWithTranscript } from "@/lib/openai";
+import { getRealtimeModel } from "@/lib/openai-realtime";
 
 export const meetingsRouter = router({
     /**
@@ -263,7 +264,7 @@ export const meetingsRouter = router({
             const agentName = meeting.agent?.name || "AI Assistant";
             const agentDesc = meeting.agent?.description || "";
             const apiKey = process.env.OPENAI_API_KEY;
-            const realtimeModel = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-2";
+            const realtimeModel = getRealtimeModel();
 
             const instructions = `You are ${agentName}, an AI meeting assistant.
 ${agentDesc ? `Your role: ${agentDesc}` : ""}

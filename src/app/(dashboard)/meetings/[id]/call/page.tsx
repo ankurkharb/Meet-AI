@@ -27,10 +27,6 @@ export default function MeetingCallPage({ params }: MeetingCallPageProps) {
     const transcriptEndRef = useRef<HTMLDivElement>(null);
 
     const { data: meeting, isLoading, error: meetingError } = trpc.meetings.getById.useQuery({ id });
-    const { data: realtimeSession, error: tokenError } = trpc.meetings.getRealtimeToken.useQuery(
-        { meetingId: id },
-        { enabled: !!meeting, retry: false }
-    );
     const startMeeting = trpc.meetings.update.useMutation();
 
     // Handle meeting fetch error
@@ -47,7 +43,7 @@ export default function MeetingCallPage({ params }: MeetingCallPageProps) {
 
     // Main effect: setup camera + connect to OpenAI Realtime
     useEffect(() => {
-        if (!realtimeSession || initRef.current) return;
+        if (!meeting || initRef.current) return;
         initRef.current = true;
 
         const init = async () => {
@@ -135,11 +131,10 @@ export default function MeetingCallPage({ params }: MeetingCallPageProps) {
                 await pc.setLocalDescription(offer);
 
                 const response = await fetch(
-                    "https://api.openai.com/v1/realtime/calls",
+                    `/api/realtime/call?meetingId=${encodeURIComponent(id)}`,
                     {
                         method: "POST",
                         headers: {
-                            Authorization: `Bearer ${realtimeSession.ephemeralToken}`,
                             "Content-Type": "application/sdp",
                         },
                         body: offer.sdp,
@@ -166,6 +161,7 @@ export default function MeetingCallPage({ params }: MeetingCallPageProps) {
 
             } catch (err: unknown) {
                 console.error("[Call] Connection failed:", err);
+                initRef.current = false;
                 setError(err instanceof Error ? err.message : "Failed to connect");
                 setIsConnecting(false);
             }
@@ -178,15 +174,7 @@ export default function MeetingCallPage({ params }: MeetingCallPageProps) {
             pcRef.current = null;
             mediaStreamRef.current?.getTracks().forEach(t => t.stop());
         };
-    }, [meeting?.id, meeting?.status, realtimeSession, startMeeting]);
-
-    // Handle token error
-    useEffect(() => {
-        if (tokenError) {
-            setError(tokenError.message || "Failed to get AI session token");
-            setIsConnecting(false);
-        }
-    }, [tokenError]);
+    }, [id, meeting, startMeeting]);
 
     const toggleMute = () => {
         const audioTrack = mediaStreamRef.current?.getAudioTracks()[0];
