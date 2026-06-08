@@ -263,6 +263,7 @@ export const meetingsRouter = router({
             const agentName = meeting.agent?.name || "AI Assistant";
             const agentDesc = meeting.agent?.description || "";
             const apiKey = process.env.OPENAI_API_KEY;
+            const realtimeModel = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-2";
 
             const instructions = `You are ${agentName}, an AI meeting assistant.
 ${agentDesc ? `Your role: ${agentDesc}` : ""}
@@ -291,7 +292,7 @@ Your responsibilities:
                     body: JSON.stringify({
                         session: {
                             type: "realtime",
-                            model: "gpt-realtime",
+                            model: realtimeModel,
                             instructions,
                             audio: {
                                 output: { voice: "alloy" },

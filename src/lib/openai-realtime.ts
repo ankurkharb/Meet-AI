@@ -5,7 +5,7 @@
  * Uses ephemeral token approach for client-side WebRTC connection
  */
 
-const REALTIME_MODEL = "gpt-realtime";
+const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-2";
 const REALTIME_TRANSCRIPTION_MODEL = "gpt-4o-transcribe";
 
 export interface RealtimeSession {
